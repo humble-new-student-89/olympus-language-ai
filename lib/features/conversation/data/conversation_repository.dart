@@ -9,10 +9,12 @@ class ConversationRepository {
   Future<String> startSession({
     required String userId,
     String? scenarioId,
+    String? scenarioName,
   }) async {
     return _firestore.createSession(
       userId: userId,
       scenarioId: scenarioId,
+      scenarioName: scenarioName,
     );
   }
 
@@ -35,4 +37,25 @@ class ConversationRepository {
       correction: correction,
     );
   }
+
+  Future<void> saveRecap(
+    String sessionId, {
+    required List<String> topMistakes,
+    required String strength,
+  }) async {
+    await _firestore.updateSessionRecap(
+      sessionId,
+      topMistakes: topMistakes,
+      strength: strength,
+    );
+  }
+
+  Future<List<Map<String, dynamic>>> getSessions(String userId) =>
+      _firestore.getUserSessions(userId);
+
+  Future<List<Map<String, dynamic>>> getTranscripts(String sessionId) =>
+      _firestore.getSessionTranscripts(sessionId);
+
+  Future<Map<String, dynamic>?> getSession(String sessionId) =>
+      _firestore.getSession(sessionId);
 }

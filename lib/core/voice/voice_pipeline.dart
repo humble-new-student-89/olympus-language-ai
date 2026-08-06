@@ -22,27 +22,39 @@ class VoicePipeline {
     required List<ChatMessage> history,
     String? systemPrompt,
   }) async {
-    // 1. Transcribe audio
     final transcript = await _stt.transcribe(audioFilePath);
 
     if (transcript.isEmpty) {
       throw VoicePipelineException('No speech detected.');
     }
 
-    // 2. Build messages from history + new transcript
     final messages = history.map((m) => m.toMap()).toList();
     messages.add({'role': 'user', 'content': transcript});
 
-    // 3. Get LLM response
     final responseText = await _llm.chat(messages, systemPrompt: systemPrompt);
 
-    // 4. Synthesize response
     final audioBytes = await _tts.synthesize(responseText);
 
     return VoiceTurn(
       userTranscript: transcript,
       aiResponse: responseText,
       audio: audioBytes,
+    );
+  }
+
+  Future<SessionRecapData> generateRecap({
+    required List<ChatMessage> messages,
+    required int durationSeconds,
+  }) async {
+    final content = messages.map((m) => '${m.role}: ${m.content}').join('\n');
+
+    final summary = await _llm.recap(content);
+    final mistakes = summary['mistakes'] as List<String>? ?? [];
+    final strength = summary['strength'] as String? ?? '';
+
+    return SessionRecapData(
+      topMistakes: mistakes,
+      strength: strength,
     );
   }
 
@@ -70,5 +82,15 @@ class VoiceTurn {
     required this.userTranscript,
     required this.aiResponse,
     required this.audio,
+  });
+}
+
+class SessionRecapData {
+  final List<String> topMistakes;
+  final String strength;
+
+  SessionRecapData({
+    required this.topMistakes,
+    required this.strength,
   });
 }

@@ -5,10 +5,13 @@ import 'package:path_provider/path_provider.dart';
 
 import '../../domain/conversation_state.dart';
 import '../../domain/models.dart';
+import '../../domain/scenarios.dart';
 import '../providers.dart';
 
 class ConversationScreen extends ConsumerStatefulWidget {
-  const ConversationScreen({super.key});
+  final String? scenarioId;
+
+  const ConversationScreen({super.key, this.scenarioId});
 
   @override
   ConsumerState<ConversationScreen> createState() =>
@@ -23,7 +26,18 @@ class _ConversationScreenState extends ConsumerState<ConversationScreen> {
   void initState() {
     super.initState();
     WidgetsBinding.instance.addPostFrameCallback((_) {
-      ref.read(conversationStateProvider.notifier).startSession();
+      final scenario = widget.scenarioId != null
+          ? predefinedScenarios.where((s) => s.id == widget.scenarioId).firstOrNull
+          : null;
+
+      ref.read(conversationStateProvider.notifier).setScenarioPrompt(
+            scenario?.systemPrompt,
+          );
+
+      ref.read(conversationStateProvider.notifier).startSession(
+            scenarioId: scenario?.id,
+            scenarioName: scenario?.name,
+          );
     });
   }
 
@@ -56,9 +70,12 @@ class _ConversationScreenState extends ConsumerState<ConversationScreen> {
     }
   }
 
-  void _endSession() {
-    ref.read(conversationStateProvider.notifier).endSession();
-    if (mounted) Navigator.of(context).pop();
+  Future<void> _endSession() async {
+    final recap =
+        await ref.read(conversationStateProvider.notifier).endSession();
+    if (mounted) {
+      Navigator.of(context).pop(recap);
+    }
   }
 
   Widget _buildStateIndicator(ConversationState state) {
@@ -131,7 +148,6 @@ class _ConversationScreenState extends ConsumerState<ConversationScreen> {
       );
     }
 
-    // Show last 4 messages
     final recent = messages.length > 4
         ? messages.sublist(messages.length - 4)
         : messages;
@@ -176,10 +192,17 @@ class _ConversationScreenState extends ConsumerState<ConversationScreen> {
   @override
   Widget build(BuildContext context) {
     final state = ref.watch(conversationStateProvider);
+    final scenarioName = switch (state) {
+      ConversationIdle(scenarioName: final n) => n,
+      ConversationRecording(scenarioName: final n) => n,
+      ConversationProcessing(scenarioName: final n) => n,
+      ConversationSpeaking(scenarioName: final n) => n,
+      ConversationError(scenarioName: final n) => n,
+    };
 
     return Scaffold(
       appBar: AppBar(
-        title: const Text('Conversation'),
+        title: Text(scenarioName ?? 'Conversation'),
         actions: [
           TextButton(
             onPressed:

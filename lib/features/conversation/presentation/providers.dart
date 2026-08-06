@@ -28,8 +28,14 @@ final voicePipelineProvider = Provider<VoicePipeline>((ref) {
   );
 });
 
+final firestoreServiceProvider = Provider<FirestoreService>((ref) {
+  return FirestoreService();
+});
+
 final conversationRepositoryProvider = Provider<ConversationRepository>((ref) {
-  return ConversationRepository(firestore: FirestoreService());
+  return ConversationRepository(
+    firestore: ref.watch(firestoreServiceProvider),
+  );
 });
 
 final conversationStateProvider =

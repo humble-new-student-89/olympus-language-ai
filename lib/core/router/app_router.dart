@@ -6,6 +6,7 @@ import '../../features/auth/presentation/screens/login_screen.dart';
 import '../../features/auth/presentation/screens/signup_screen.dart';
 import '../../features/home/presentation/screens/home_screen.dart';
 import '../../features/conversation/presentation/screens/conversation_screen.dart';
+import '../../features/history/presentation/screens/history_screen.dart';
 
 final routerProvider = Provider<GoRouter>((ref) {
   final authState = ref.watch(authStateProvider);
@@ -35,8 +36,19 @@ final routerProvider = Provider<GoRouter>((ref) {
         builder: (context, state) => const HomeScreen(),
       ),
       GoRoute(
+        path: '/history',
+        builder: (context, state) => const HistoryScreen(),
+      ),
+      GoRoute(
         path: '/conversation',
         builder: (context, state) => const ConversationScreen(),
+      ),
+      GoRoute(
+        path: '/conversation/:scenarioId',
+        builder: (context, state) {
+          final scenarioId = state.pathParameters['scenarioId'];
+          return ConversationScreen(scenarioId: scenarioId);
+        },
       ),
     ],
   );

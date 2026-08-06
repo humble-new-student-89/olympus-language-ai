@@ -50,6 +50,41 @@ class OpenRouterService {
     return choices[0]['message']['content'] as String;
   }
 
+  Future<Map<String, dynamic>> recap(String conversationText) async {
+    final allMessages = [
+      {'role': 'system', 'content': _recapSystemPrompt()},
+      {'role': 'user', 'content': conversationText},
+    ];
+
+    final response = await _client.post(
+      Uri.parse('https://openrouter.ai/api/v1/chat/completions'),
+      headers: {
+        'Authorization': 'Bearer $_apiKey',
+        'Content-Type': 'application/json',
+        'HTTP-Referer': 'https://olympuslanguage.ai',
+        'X-Title': 'Olympus Language AI',
+      },
+      body: jsonEncode({
+        'model': _model,
+        'messages': allMessages,
+        'max_tokens': 300,
+        'temperature': 0.3,
+        'response_format': {'type': 'json_object'},
+      }),
+    );
+
+    if (response.statusCode != 200) {
+      throw OpenRouterException(
+        'Recap failed: ${response.statusCode} ${response.body}',
+      );
+    }
+
+    final data = jsonDecode(response.body) as Map<String, dynamic>;
+    final choices = data['choices'] as List<dynamic>;
+    final content = choices[0]['message']['content'] as String;
+    return jsonDecode(content) as Map<String, dynamic>;
+  }
+
   String _defaultSystemPrompt() => '''
 You are a patient, friendly language tutor. You are speaking with a language learner.
 
@@ -61,6 +96,15 @@ Guidelines:
 - Stay on topic — don't switch subjects abruptly.
 - End most responses with a natural follow-up question.
 - You are SPEAKING, not writing. No markdown, no lists, no emoji.''';
+
+  String _recapSystemPrompt() => '''
+You are a language tutor reviewing a student's conversation transcript.
+Analyze the conversation and return a JSON object with:
+- "mistakes": an array of up to 3 specific language mistakes the learner made (grammar, vocabulary, or phrasing), each as a string like "Used 'goed' instead of 'went'"
+- "strength": one sentence highlighting something the learner did well
+
+If there are no clear mistakes, return an empty mistakes array.
+Return ONLY valid JSON, no other text.''';
 
   void dispose() => _client.close();
 }

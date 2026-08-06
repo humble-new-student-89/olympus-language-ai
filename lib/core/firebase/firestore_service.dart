@@ -33,6 +33,7 @@ class FirestoreService {
   Future<String> createSession({
     required String userId,
     String? scenarioId,
+    String? scenarioName,
   }) async {
     final ref = _db.collection('sessions').doc();
     await ref.set({
@@ -42,6 +43,7 @@ class FirestoreService {
       'durationSeconds': 0,
       'transcriptCount': 0,
       'scenarioId': scenarioId,
+      'scenarioName': scenarioName,
     });
     return ref.id;
   }
@@ -50,6 +52,16 @@ class FirestoreService {
       _db.collection('sessions').doc(sessionId).update({
         'endedAt': FieldValue.serverTimestamp(),
         'durationSeconds': durationSeconds,
+      });
+
+  Future<void> updateSessionRecap(
+    String sessionId, {
+    required List<String> topMistakes,
+    required String strength,
+  }) =>
+      _db.collection('sessions').doc(sessionId).update({
+        'topMistakes': topMistakes,
+        'strength': strength,
       });
 
   // ── Transcripts ──
@@ -74,5 +86,56 @@ class FirestoreService {
     await _db.collection('sessions').doc(sessionId).update({
       'transcriptCount': FieldValue.increment(1),
     });
+  }
+
+  // ── Session History ──
+
+  Future<List<Map<String, dynamic>>> getUserSessions(String userId) async {
+    final snapshot = await _db
+        .collection('sessions')
+        .where('userId', isEqualTo: userId)
+        .orderBy('startedAt', descending: true)
+        .limit(50)
+        .get();
+
+    return snapshot.docs.map((doc) {
+      final data = doc.data();
+      return {
+        'id': doc.id,
+        ...data,
+        'startedAt': (data['startedAt'] as Timestamp?)?.toDate(),
+        'endedAt': (data['endedAt'] as Timestamp?)?.toDate(),
+      };
+    }).toList();
+  }
+
+  Future<List<Map<String, dynamic>>> getSessionTranscripts(
+      String sessionId) async {
+    final snapshot = await _db
+        .collection('transcripts')
+        .where('sessionId', isEqualTo: sessionId)
+        .orderBy('timestamp', descending: false)
+        .get();
+
+    return snapshot.docs.map((doc) {
+      final data = doc.data();
+      return {
+        'id': doc.id,
+        ...data,
+        'timestamp': (data['timestamp'] as Timestamp?)?.toDate(),
+      };
+    }).toList();
+  }
+
+  Future<Map<String, dynamic>?> getSession(String sessionId) async {
+    final doc = await _db.collection('sessions').doc(sessionId).get();
+    if (!doc.exists) return null;
+    final data = doc.data()!;
+    return {
+      'id': doc.id,
+      ...data,
+      'startedAt': (data['startedAt'] as Timestamp?)?.toDate(),
+      'endedAt': (data['endedAt'] as Timestamp?)?.toDate(),
+    };
   }
 }

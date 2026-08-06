@@ -19,7 +19,7 @@ project:
     Features walkie-talkie voice conversation, STT via Deepgram Nova-3, LLM via OpenRouter,
     TTS via Deepgram Aura, Firebase Auth + Firestore, and Riverpod state management.
   type: mobile-app
-  status: mvp-phase1
+  status: mvp-phase2
   lifecycle_status: active-development
   priority: high
   importance: 92
@@ -114,7 +114,7 @@ metrics:
   complexity: 78
   commercial_potential: 90
   uniqueness: 88
-  completeness: 40
+  completeness: 55
   maintainability: 85
   learning_value: 90
   ai_dependency: 85
@@ -124,18 +124,18 @@ metrics:
 development:
   maturity: prototype
   maintenance_mode: active
-  current_focus: Phase 1 — Foundation + Core Voice Pipeline
+  current_focus: Phase 3 — Retention & Growth
   blocker: None
-  next_milestone: Phase 2 — Conversation Intelligence
-  estimated_completion: In Progress
-  last_major_change: Initial project scaffold and voice pipeline
+  next_milestone: Phase 3 — Retention & Growth
+  estimated_completion: 2026-08-31
+  last_major_change: Phase 2 — Scenario picker, post-session recap with AI analysis, session history
 
 generated:
-  code_files: 18
-  total_lines: 2000
-  repository_size_mb: 5
-  total_size_mb: 5
-  commit_count: 3
+  code_files: 26
+  total_lines: 2500
+  repository_size_mb: 6
+  total_size_mb: 6
+  commit_count: 5
   branch_count: 1
   latest_commit: ""
   latest_release: ""
@@ -188,19 +188,24 @@ related_projects:
 
 agent_handoff:
   current_state: |
-    Phase 1 complete — Flutter Android app with Firebase auth, voice pipeline (Deepgram STT + OpenRouter LLM + Deepgram TTS), walkie-talkie conversation screen.
+    Phase 2 complete — Scenario picker on home screen with 6 predefined scenarios, each with custom system prompts. Post-session recap screen with AI-generated mistake analysis and strengths. Session history screen with session list, transcript detail, and recap summary. Firestore schema extended with scenarioName, topMistakes, and strength fields.
   immediate_tasks:
-    - Run flutter run on Android device/emulator to verify
+    - Run flutter run on Android device/emulator to test scenarios + recap flow
   known_issues:
     - Not yet tested on physical device
   important_files:
     - lib/main.dart
+    - lib/features/home/presentation/screens/home_screen.dart
+    - lib/features/conversation/presentation/screens/conversation_screen.dart
+    - lib/features/conversation/presentation/screens/recap_screen.dart
+    - lib/features/history/presentation/screens/history_screen.dart
+    - lib/features/conversation/domain/scenarios.dart
     - android/app/google-services.json
     - .env
   warnings:
     - API keys required in .env before running
   next_agent_instructions: |
-    Read architecture.md first. Then proceed with Phase 2.
+    Read architecture.md first. Then proceed with Phase 3 — Retention & Growth.
 
 notes:
   - "Olympus Language AI — Speak. Learn. Grow."

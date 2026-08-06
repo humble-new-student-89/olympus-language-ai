@@ -33,20 +33,45 @@ class ConversationNotifier extends StateNotifier<ConversationState> {
     };
   }
 
+  String? get currentScenarioId {
+    return switch (state) {
+      ConversationIdle(scenarioId: final id) => id,
+      ConversationRecording(scenarioId: final id) => id,
+      ConversationProcessing(scenarioId: final id) => id,
+      ConversationSpeaking(scenarioId: final id) => id,
+      ConversationError(scenarioId: final id) => id,
+    };
+  }
+
+  String? get currentScenarioName {
+    return switch (state) {
+      ConversationIdle(scenarioName: final n) => n,
+      ConversationRecording(scenarioName: final n) => n,
+      ConversationProcessing(scenarioName: final n) => n,
+      ConversationSpeaking(scenarioName: final n) => n,
+      ConversationError(scenarioName: final n) => n,
+    };
+  }
+
   void setScenarioPrompt(String? prompt) {
     _scenarioSystemPrompt = prompt;
   }
 
-  Future<void> startSession({String? scenarioId}) async {
+  Future<void> startSession({String? scenarioId, String? scenarioName}) async {
     final user = FirebaseConfig.auth.currentUser;
     if (user == null) return;
 
     final sessionId = await _repository.startSession(
       userId: user.uid,
       scenarioId: scenarioId,
+      scenarioName: scenarioName,
     );
     _sessionStartTime = DateTime.now();
-    state = ConversationIdle(sessionId: sessionId);
+    state = ConversationIdle(
+      sessionId: sessionId,
+      scenarioId: scenarioId,
+      scenarioName: scenarioName,
+    );
   }
 
   void startRecording() {
@@ -56,6 +81,8 @@ class ConversationNotifier extends StateNotifier<ConversationState> {
     state = ConversationRecording(
       messages: _currentMessages,
       sessionId: sessionId,
+      scenarioId: currentScenarioId,
+      scenarioName: currentScenarioName,
     );
   }
 
@@ -66,12 +93,13 @@ class ConversationNotifier extends StateNotifier<ConversationState> {
     state = ConversationProcessing(
       messages: _currentMessages,
       sessionId: sessionId,
+      scenarioId: currentScenarioId,
+      scenarioName: currentScenarioName,
     );
 
     try {
-      final history = _currentMessages
-          .whereType<ChatMessage>()
-          .toList();
+      final history =
+          _currentMessages.whereType<ChatMessage>().toList();
 
       final turn = await _pipeline.processTurn(
         audioFilePath: audioFilePath,
@@ -79,7 +107,6 @@ class ConversationNotifier extends StateNotifier<ConversationState> {
         systemPrompt: _scenarioSystemPrompt,
       );
 
-      // Save transcripts
       final user = FirebaseConfig.auth.currentUser;
       if (user != null) {
         await _repository.saveTranscript(
@@ -95,17 +122,17 @@ class ConversationNotifier extends StateNotifier<ConversationState> {
         );
       }
 
-      // Add to history
       final updatedMessages = [
         ..._currentMessages.whereType<ChatMessage>(),
         ChatMessage(role: 'user', content: turn.userTranscript),
         ChatMessage(role: 'assistant', content: turn.aiResponse),
       ];
 
-      // Play audio
       state = ConversationSpeaking(
         messages: updatedMessages,
         sessionId: sessionId,
+        scenarioId: currentScenarioId,
+        scenarioName: currentScenarioName,
       );
 
       final tempDir = await getTemporaryDirectory();
@@ -117,6 +144,8 @@ class ConversationNotifier extends StateNotifier<ConversationState> {
           state = ConversationIdle(
             messages: updatedMessages,
             sessionId: sessionId,
+            scenarioId: currentScenarioId,
+            scenarioName: currentScenarioName,
           );
         }
       });
@@ -127,18 +156,74 @@ class ConversationNotifier extends StateNotifier<ConversationState> {
         message: e.toString(),
         messages: _currentMessages,
         sessionId: sessionId,
+        scenarioId: currentScenarioId,
+        scenarioName: currentScenarioName,
       );
     }
   }
 
-  Future<void> endSession() async {
+  Future<SessionRecap> endSession() async {
     final sessionId = currentSessionId;
-    if (sessionId != null && _sessionStartTime != null) {
-      final duration = DateTime.now().difference(_sessionStartTime!).inSeconds;
-      await _repository.endSession(sessionId, duration);
+    final durationSeconds = _sessionStartTime != null
+        ? DateTime.now().difference(_sessionStartTime!).inSeconds
+        : 0;
+
+    if (sessionId != null) {
+      await _repository.endSession(sessionId, durationSeconds);
     }
+
     await _player.dispose();
+
+    final messages = _currentMessages.whereType<ChatMessage>().toList();
+
+    SessionRecap recap;
+    if (messages.length >= 2) {
+      try {
+        final recapData = await _pipeline.generateRecap(
+          messages: messages,
+          durationSeconds: durationSeconds,
+        );
+        recap = SessionRecap(
+          sessionId: sessionId ?? '',
+          scenarioName: currentScenarioName,
+          startedAt: _sessionStartTime ?? DateTime.now(),
+          durationSeconds: durationSeconds,
+          messageCount: messages.length,
+          messages: messages,
+          topMistakes: recapData.topMistakes,
+          strength: recapData.strength,
+        );
+
+        if (sessionId != null) {
+          await _repository.saveRecap(
+            sessionId,
+            topMistakes: recapData.topMistakes,
+            strength: recapData.strength,
+          );
+        }
+      } catch (_) {
+        recap = _buildLocalRecap(messages, durationSeconds);
+      }
+    } else {
+      recap = _buildLocalRecap(messages, durationSeconds);
+    }
+
     state = ConversationIdle();
+    return recap;
+  }
+
+  SessionRecap _buildLocalRecap(
+      List<ChatMessage> messages, int durationSeconds) {
+    return SessionRecap(
+      sessionId: currentSessionId ?? '',
+      scenarioName: currentScenarioName,
+      startedAt: _sessionStartTime ?? DateTime.now(),
+      durationSeconds: durationSeconds,
+      messageCount: messages.length,
+      messages: messages,
+      topMistakes: const [],
+      strength: 'You completed a conversation session! Keep practicing daily.',
+    );
   }
 
   void clearError() {
@@ -146,6 +231,8 @@ class ConversationNotifier extends StateNotifier<ConversationState> {
     state = ConversationIdle(
       messages: _currentMessages,
       sessionId: sessionId,
+      scenarioId: currentScenarioId,
+      scenarioName: currentScenarioName,
     );
   }
 
