@@ -1,4 +1,4 @@
-# AI Speaking Partner — High-Level Requirements
+# Olympus Language AI — High-Level Requirements
 
 ## One-liner
 A voice-first app that lets language learners have real, spoken conversations with a patient AI partner that corrects them in the moment — the "speaking practice" wedge, not another course.
