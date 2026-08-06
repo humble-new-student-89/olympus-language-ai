@@ -63,3 +63,19 @@ Low-latency voice models made real-time spoken correction cheap enough to sell a
 
 ## Success Metric for MVP
 % of trial users who convert to paid **and** are still doing ≥3 conversations/week at day 30. If retention on that number is weak, the correction/scenario quality — not pricing — is the problem to fix first.
+
+---
+
+## Technical Decisions to Lock In
+
+1. **STT/TTS provider** — Deepgram, ElevenLabs, or Azure Speech. This is the latency bottleneck. Pick one.
+2. **Auth method** — Email/password + Google sign-in (Apple for iOS). Use Firebase Auth or Supabase Auth.
+3. **Database** — PostgreSQL (Supabase or managed). Stores users, sessions, transcripts, corrections, streaks, usage minutes.
+4. **Billing** — Stripe. Handles subscriptions, metered billing, free trial → paid conversion.
+5. **Hosting** — Backend on Fly.io or Railway. Keep it simple, no k8s.
+
+## Open Design Questions
+
+1. **Correction flow** — Does the AI weave corrections naturally into its next response ("Actually, it's 'went' not 'goed'. So you went to the park..."), or pause the flow and explicitly call it out? Natural is better for immersion but harder to prompt reliably.
+2. **Conversation mode** — Walkie-talkie (speak → wait → hear) or true duplex (interrupt anytime)? Walkie-talkie is simpler to build and good enough for MVP.
+3. **Talk-time metering** — Count from STT start to TTS end per turn? Or just wall-clock session duration? Wall-clock is simpler but less fair.
