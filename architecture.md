@@ -1,7 +1,7 @@
 # Olympus Language AI — Architecture
 
 Generated: `2026-08-06`
-From: Flutter Android project, Phase 1 codebase.
+From: Flutter Android project, Phase 5 codebase.
 
 > Project identity: **Olympus Language AI** — Voice-first language learning app with an AI conversation partner, built with Flutter, Firebase, Deepgram, and OpenRouter.
 
@@ -113,3 +113,27 @@ lib/
 - API keys required in `.env` (gitignored)
 - Firebase config via `google-services.json` in `android/app/`
 - minSdk 24 (Android 7.0+)
+
+## 7. Testing
+
+- **Framework**: `flutter_test` + `mocktail` for HTTP mocking
+- **CI**: GitHub Actions — runs analyze, test, and build on every push
+- **Test structure**:
+  ```
+  test/
+    domain/
+      streak_service_test.dart       — 15 tests
+      fluency_service_test.dart      — 13 tests
+      milestone_service_test.dart    — 7 tests
+      scenarios_test.dart            — 9 tests
+      models_test.dart               — 8 tests
+      subscription_test.dart         — 16 tests
+    voice/
+      openrouter_service_test.dart   — 5 tests
+      voice_pipeline_test.dart       — 5 tests
+    widget/
+      home_screen_test.dart          — 3 tests
+      conversation_screen_test.dart  — 3 tests
+      auth_screen_test.dart          — 2 tests
+  ```
+- **Total**: 87 tests covering domain services, voice pipeline, and UI screens

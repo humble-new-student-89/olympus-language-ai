@@ -19,6 +19,14 @@ class OpenRouterService {
         _model = dotenv.env['OPENROUTER_MODEL'] ?? 'openai/gpt-4o-mini',
         _client = client ?? http.Client();
 
+  OpenRouterService.test({
+    required String apiKey,
+    required String model,
+    http.Client? client,
+  })  : _apiKey = apiKey,
+        _model = model,
+        _client = client ?? http.Client();
+
   Future<OpenRouterChatResult> chat(
     List<Map<String, String>> messages, {
     String? systemPrompt,
