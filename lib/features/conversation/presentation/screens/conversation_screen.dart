@@ -1,11 +1,15 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:go_router/go_router.dart';
 import 'package:record/record.dart';
 import 'package:path_provider/path_provider.dart';
 
 import '../../domain/conversation_state.dart';
 import '../../domain/models.dart';
 import '../../domain/scenarios.dart';
+import '../../../milestones/domain/milestone_service.dart';
+import '../../../milestones/presentation/milestone_card.dart';
+import '../conversation_notifier.dart';
 import '../providers.dart';
 
 class ConversationScreen extends ConsumerStatefulWidget {
@@ -25,7 +29,7 @@ class _ConversationScreenState extends ConsumerState<ConversationScreen> {
   @override
   void initState() {
     super.initState();
-    WidgetsBinding.instance.addPostFrameCallback((_) {
+    WidgetsBinding.instance.addPostFrameCallback((_) async {
       final scenario = widget.scenarioId != null
           ? predefinedScenarios.where((s) => s.id == widget.scenarioId).firstOrNull
           : null;
@@ -34,10 +38,16 @@ class _ConversationScreenState extends ConsumerState<ConversationScreen> {
             scenario?.systemPrompt,
           );
 
-      ref.read(conversationStateProvider.notifier).startSession(
-            scenarioId: scenario?.id,
-            scenarioName: scenario?.name,
-          );
+      try {
+        await ref.read(conversationStateProvider.notifier).startSession(
+              scenarioId: scenario?.id,
+              scenarioName: scenario?.name,
+            );
+      } on UsageExceededException {
+        if (mounted) {
+          context.push('/paywall');
+        }
+      }
     });
   }
 
@@ -73,9 +83,46 @@ class _ConversationScreenState extends ConsumerState<ConversationScreen> {
   Future<void> _endSession() async {
     final recap =
         await ref.read(conversationStateProvider.notifier).endSession();
-    if (mounted) {
-      Navigator.of(context).pop(recap);
+    if (!mounted) return;
+    final milestones = ref.read(conversationStateProvider.notifier).newMilestones;
+    if (milestones.isNotEmpty) {
+      if (!mounted) return;
+      _showMilestoneCelebration(context, milestones);
+      await Future.delayed(const Duration(seconds: 2));
     }
+    if (!mounted) return;
+    Navigator.of(context).pop(recap);
+  }
+
+  void _showMilestoneCelebration(BuildContext context, List<Milestone> milestones) {
+    showDialog(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+        content: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            const Text('🎉', style: TextStyle(fontSize: 48)),
+            const SizedBox(height: 8),
+            const Text(
+              'Milestone Unlocked!',
+              style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+            ),
+            const SizedBox(height: 16),
+            ...milestones.map((m) => Padding(
+                  padding: const EdgeInsets.only(bottom: 8),
+                  child: MilestoneCard(milestone: m),
+                )),
+          ],
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.of(ctx).pop(),
+            child: const Text('Awesome!'),
+          ),
+        ],
+      ),
+    );
   }
 
   Widget _buildStateIndicator(ConversationState state) {

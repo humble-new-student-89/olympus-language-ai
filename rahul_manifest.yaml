@@ -19,7 +19,7 @@ project:
     Features walkie-talkie voice conversation, STT via Deepgram Nova-3, LLM via OpenRouter,
     TTS via Deepgram Aura, Firebase Auth + Firestore, and Riverpod state management.
   type: mobile-app
-  status: mvp-phase2
+  status: mvp-phase3
   lifecycle_status: active-development
   priority: high
   importance: 92

@@ -36,6 +36,20 @@ dependencies:
   # Env
   flutter_dotenv: ^5.2.1
 
+  # Billing
+  in_app_purchase: ^3.2.0
+  in_app_purchase_android: ^0.4.0
+
+  # Push notifications
+  firebase_messaging: ^15.2.4
+  flutter_local_notifications: ^18.0.1
+
+  # Sharing
+  share_plus: ^10.1.4
+
+  # Charts
+  fl_chart: ^0.70.2
+
   # Serialization
   json_annotation: ^4.9.0
   freezed_annotation: ^2.4.4

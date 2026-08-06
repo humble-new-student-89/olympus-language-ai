@@ -7,6 +7,8 @@ import '../../features/auth/presentation/screens/signup_screen.dart';
 import '../../features/home/presentation/screens/home_screen.dart';
 import '../../features/conversation/presentation/screens/conversation_screen.dart';
 import '../../features/history/presentation/screens/history_screen.dart';
+import '../../features/progress/presentation/screens/progress_screen.dart';
+import '../../features/billing/presentation/screens/paywall_screen.dart';
 
 final routerProvider = Provider<GoRouter>((ref) {
   final authState = ref.watch(authStateProvider);
@@ -38,6 +40,14 @@ final routerProvider = Provider<GoRouter>((ref) {
       GoRoute(
         path: '/history',
         builder: (context, state) => const HistoryScreen(),
+      ),
+      GoRoute(
+        path: '/progress',
+        builder: (context, state) => const ProgressScreen(),
+      ),
+      GoRoute(
+        path: '/paywall',
+        builder: (context, state) => const PaywallScreen(),
       ),
       GoRoute(
         path: '/conversation',

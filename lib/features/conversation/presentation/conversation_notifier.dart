@@ -1,26 +1,55 @@
+import 'dart:io';
+
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:audioplayers/audioplayers.dart';
 import 'package:path_provider/path_provider.dart';
-import 'dart:io';
+import 'package:cloud_firestore/cloud_firestore.dart';
 
 import '../../../core/voice/voice_pipeline.dart';
 import '../../../core/firebase/firebase_config.dart';
+import '../../../core/firebase/firestore_service.dart';
+import '../../progress/domain/streak_service.dart';
+import '../../progress/domain/fluency_service.dart';
+import '../../milestones/domain/milestone_service.dart';
 import '../domain/conversation_state.dart';
 import '../domain/models.dart';
 import '../data/conversation_repository.dart';
 
+class UsageExceededException implements Exception {
+  final int minutesUsed;
+  final int trialLimit;
+  UsageExceededException(this.minutesUsed, this.trialLimit);
+
+  @override
+  String toString() =>
+      'Free trial exhausted: $minutesUsed / $trialLimit minutes';
+}
+
 class ConversationNotifier extends StateNotifier<ConversationState> {
   final VoicePipeline _pipeline;
   final ConversationRepository _repository;
+  final FirestoreService _firestore;
+  final StreakService _streakService;
+  final FluencyService _fluencyService;
+  final MilestoneService _milestoneService;
   final AudioPlayer _player = AudioPlayer();
   DateTime? _sessionStartTime;
   String? _scenarioSystemPrompt;
+  static const int trialMinutesLimit = 10;
 
   ConversationNotifier({
     required VoicePipeline pipeline,
     required ConversationRepository repository,
+    required FirestoreService firestore,
+    required StreakService streakService,
+    required FluencyService fluencyService,
+    required MilestoneService milestoneService,
   })  : _pipeline = pipeline,
         _repository = repository,
+        _firestore = firestore,
+        _streakService = streakService,
+        _fluencyService = fluencyService,
+        _milestoneService = milestoneService,
         super(ConversationIdle());
 
   String? get currentSessionId {
@@ -60,6 +89,14 @@ class ConversationNotifier extends StateNotifier<ConversationState> {
   Future<void> startSession({String? scenarioId, String? scenarioName}) async {
     final user = FirebaseConfig.auth.currentUser;
     if (user == null) return;
+
+    final status = await _firestore.getSubscriptionStatus(user.uid);
+    final plan = status?['plan'] as String? ?? 'free';
+    final totalMinutes = status?['totalMinutesUsed'] as int? ?? 0;
+
+    if (plan == 'free' && totalMinutes >= trialMinutesLimit) {
+      throw UsageExceededException(totalMinutes, trialMinutesLimit);
+    }
 
     final sessionId = await _repository.startSession(
       userId: user.uid,
@@ -162,17 +199,71 @@ class ConversationNotifier extends StateNotifier<ConversationState> {
     }
   }
 
+  List<Milestone> _newMilestones = [];
+  List<Milestone> get newMilestones => _newMilestones;
+
   Future<SessionRecap> endSession() async {
     final sessionId = currentSessionId;
+    final user = FirebaseConfig.auth.currentUser;
     final durationSeconds = _sessionStartTime != null
         ? DateTime.now().difference(_sessionStartTime!).inSeconds
         : 0;
+    final durationMinutes = (durationSeconds / 60).ceil();
 
     if (sessionId != null) {
       await _repository.endSession(sessionId, durationSeconds);
     }
 
     await _player.dispose();
+
+    if (user != null) {
+      await _firestore.incrementUsageMinutes(user.uid, durationMinutes);
+
+      final userDoc = await _firestore.getUser(user.uid);
+      final data = userDoc.data() as Map<String, dynamic>?;
+      final lastActiveDate = (data?['lastActiveDate'] as Timestamp?)?.toDate();
+      final currentStreak = data?['currentStreak'] as int? ?? 0;
+
+      final newStreak = _streakService.calculateStreak(
+          lastActiveDate, currentStreak);
+      await _firestore.updateStreak(user.uid, newStreak);
+
+      try {
+        final recentSessions =
+            await _firestore.getRecentSessions(user.uid, days: 30);
+        final score =
+            _fluencyService.calculateFluencyScore(recentSessions);
+        final level = _fluencyService.levelFromScore(score);
+        await _firestore.updateFluency(user.uid, score, level);
+      } catch (_) {}
+
+      try {
+        final sessionCount = await _firestore.getTotalSessionCount(user.uid);
+        final totalMinutes =
+            await _firestore.getTotalMinutesUsed(user.uid);
+        final existingMilestones =
+            await _firestore.getMilestones(user.uid);
+        final existingIds =
+            existingMilestones.map((m) => m['id'] as String).toList();
+
+        _newMilestones = _milestoneService.checkNewMilestones(
+          sessionCount: sessionCount,
+          currentStreak: newStreak,
+          totalMinutesUsed: totalMinutes,
+          existingMilestoneIds: existingIds,
+        );
+
+        for (final milestone in _newMilestones) {
+          await _firestore.saveMilestone(
+            user.uid,
+            milestone.id,
+            milestone.title,
+            milestone.description,
+            milestone.icon,
+          );
+        }
+      } catch (_) {}
+    }
 
     final messages = _currentMessages.whereType<ChatMessage>().toList();
 
