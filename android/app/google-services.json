@@ -1,0 +1,39 @@
+{
+  "project_info": {
+    "project_number": "82086094583",
+    "project_id": "olympus-language-ai",
+    "storage_bucket": "olympus-language-ai.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:82086094583:android:761e016b5059ca694f55f2",
+        "android_client_info": {
+          "package_name": "com.tutivsoft.olympuslanguageai"
+        }
+      },
+      "oauth_client": [
+        {
+          "client_id": "82086094583-f7d5beks82i9f1j437fsg4h0pohnr992.apps.googleusercontent.com",
+          "client_type": 3
+        }
+      ],
+      "api_key": [
+        {
+          "current_key": "AIzaSyAbFDfVjiKRFJhQNwEUb29Dvf9tgkSDvkI"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": [
+            {
+              "client_id": "82086094583-f7d5beks82i9f1j437fsg4h0pohnr992.apps.googleusercontent.com",
+              "client_type": 3
+            }
+          ]
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}

@@ -1,4 +1,4 @@
-package com.tutivsoft.olympus_language_ai
+package com.tutivsoft.olympuslanguageai
 
 import io.flutter.embedding.android.FlutterActivity
 
