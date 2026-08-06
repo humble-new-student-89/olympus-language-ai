@@ -70,7 +70,7 @@ Low-latency voice models made real-time spoken correction cheap enough to sell a
 
 1. **STT/TTS provider** — Deepgram, ElevenLabs, or Azure Speech. This is the latency bottleneck. Pick one.
 2. **Auth & Database** — Firebase Auth (email/password + Google sign-in) + Firestore for users, sessions, transcripts, corrections, streaks, usage minutes.
-3. **Platform** — Android only for MVP. iOS and web later.
+3. **Platform** — Android only for MVP. iOS and web later. Bundle ID: `com.tutivsoft.olympuslanguageai`.
 4. **Billing** — Deferred. No payments in MVP. Add Stripe + RevenueCat later.
 5. **Hosting** — Firebase handles everything (auth, DB, cloud functions if needed). No separate backend for now.
 
