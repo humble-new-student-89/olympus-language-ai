@@ -21,6 +21,7 @@ class VoicePipeline {
     required String audioFilePath,
     required List<ChatMessage> history,
     String? systemPrompt,
+    String? fluencyLevel,
   }) async {
     final transcript = await _stt.transcribe(audioFilePath);
 
@@ -31,13 +32,18 @@ class VoicePipeline {
     final messages = history.map((m) => m.toMap()).toList();
     messages.add({'role': 'user', 'content': transcript});
 
-    final responseText = await _llm.chat(messages, systemPrompt: systemPrompt);
+    final result = await _llm.chat(
+      messages,
+      systemPrompt: systemPrompt,
+      fluencyLevel: fluencyLevel,
+    );
 
-    final audioBytes = await _tts.synthesize(responseText);
+    final audioBytes = await _tts.synthesize(result.response);
 
     return VoiceTurn(
       userTranscript: transcript,
-      aiResponse: responseText,
+      aiResponse: result.response,
+      correction: result.correction,
       audio: audioBytes,
     );
   }
@@ -76,11 +82,13 @@ class VoicePipelineException implements Exception {
 class VoiceTurn {
   final String userTranscript;
   final String aiResponse;
+  final String? correction;
   final Uint8List audio;
 
   VoiceTurn({
     required this.userTranscript,
     required this.aiResponse,
+    this.correction,
     required this.audio,
   });
 }

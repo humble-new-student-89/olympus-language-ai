@@ -228,6 +228,36 @@ class _ConversationScreenState extends ConsumerState<ConversationScreen> {
                   msg.content,
                   style: const TextStyle(fontSize: 14),
                 ),
+                if (!isUser && msg.correction != null) ...[
+                  const SizedBox(height: 4),
+                  Container(
+                    padding:
+                        const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+                    decoration: BoxDecoration(
+                      color: Colors.orange.shade50,
+                      borderRadius: BorderRadius.circular(6),
+                      border: Border.all(color: Colors.orange.shade200),
+                    ),
+                    child: Row(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        Icon(Icons.lightbulb_outline,
+                            size: 14, color: Colors.orange.shade700),
+                        const SizedBox(width: 4),
+                        Flexible(
+                          child: Text(
+                            msg.correction!,
+                            style: TextStyle(
+                              fontSize: 12,
+                              color: Colors.orange.shade800,
+                              fontStyle: FontStyle.italic,
+                            ),
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                ],
               ],
             ),
           );

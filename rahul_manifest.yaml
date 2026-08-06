@@ -19,7 +19,7 @@ project:
     Features walkie-talkie voice conversation, STT via Deepgram Nova-3, LLM via OpenRouter,
     TTS via Deepgram Aura, Firebase Auth + Firestore, and Riverpod state management.
   type: mobile-app
-  status: mvp-phase3
+  status: mvp-phase4
   lifecycle_status: active-development
   priority: high
   importance: 92
@@ -33,6 +33,8 @@ project:
     - deepgram
     - openrouter
     - firebase
+    - in-app-purchase
+    - fcm-push
 
 business:
   stage: development
@@ -124,11 +126,11 @@ metrics:
 development:
   maturity: prototype
   maintenance_mode: active
-  current_focus: Phase 3 — Retention & Growth
+  current_focus: Phase 4 — Feedback Loop (in-flow correction + adaptive difficulty)
   blocker: None
-  next_milestone: Phase 3 — Retention & Growth
-  estimated_completion: 2026-08-31
-  last_major_change: Phase 2 — Scenario picker, post-session recap with AI analysis, session history
+  next_milestone: Phase 4 — Feedback Loop
+  estimated_completion: 2026-08-06
+  last_major_change: Phase 4 — Structured LLM JSON responses with inline correction chips + adaptive difficulty via fluency level injection
 
 generated:
   code_files: 26

@@ -394,6 +394,8 @@ class _SessionDetailSheetState extends ConsumerState<_SessionDetailSheet> {
                     itemBuilder: (context, index) {
                       final t = transcripts[index];
                       final isUser = t['speaker'] == 'user';
+                      final correction =
+                          (t['correction'] as Map<String, dynamic>?)?['correction'] as String?;
                       return Padding(
                         padding: const EdgeInsets.only(bottom: 8),
                         child: Row(
@@ -416,9 +418,47 @@ class _SessionDetailSheetState extends ConsumerState<_SessionDetailSheet> {
                             ),
                             const SizedBox(width: 8),
                             Expanded(
-                              child: Text(
-                                t['text'] ?? '',
-                                style: const TextStyle(fontSize: 13),
+                              child: Column(
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                children: [
+                                  Text(
+                                    t['text'] ?? '',
+                                    style: const TextStyle(fontSize: 13),
+                                  ),
+                                  if (!isUser && correction != null) ...[
+                                    const SizedBox(height: 4),
+                                    Container(
+                                      padding: const EdgeInsets.symmetric(
+                                          horizontal: 8, vertical: 3),
+                                      decoration: BoxDecoration(
+                                        color: Colors.orange.shade50,
+                                        borderRadius:
+                                            BorderRadius.circular(4),
+                                        border: Border.all(
+                                            color: Colors.orange.shade200),
+                                      ),
+                                      child: Row(
+                                        mainAxisSize: MainAxisSize.min,
+                                        children: [
+                                          Icon(Icons.lightbulb_outline,
+                                              size: 12,
+                                              color: Colors.orange.shade700),
+                                          const SizedBox(width: 4),
+                                          Flexible(
+                                            child: Text(
+                                              correction,
+                                              style: TextStyle(
+                                                fontSize: 11,
+                                                color: Colors.orange.shade800,
+                                                fontStyle: FontStyle.italic,
+                                              ),
+                                            ),
+                                          ),
+                                        ],
+                                      ),
+                                    ),
+                                  ],
+                                ],
                               ),
                             ),
                           ],

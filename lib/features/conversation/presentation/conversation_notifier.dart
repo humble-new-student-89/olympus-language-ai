@@ -35,6 +35,7 @@ class ConversationNotifier extends StateNotifier<ConversationState> {
   final AudioPlayer _player = AudioPlayer();
   DateTime? _sessionStartTime;
   String? _scenarioSystemPrompt;
+  String? _fluencyLevel;
   static const int trialMinutesLimit = 10;
 
   ConversationNotifier({
@@ -98,6 +99,10 @@ class ConversationNotifier extends StateNotifier<ConversationState> {
       throw UsageExceededException(totalMinutes, trialMinutesLimit);
     }
 
+    final userDoc = await _firestore.getUser(user.uid);
+    final data = userDoc.data() as Map<String, dynamic>?;
+    _fluencyLevel = data?['fluencyLevel'] as String?;
+
     final sessionId = await _repository.startSession(
       userId: user.uid,
       scenarioId: scenarioId,
@@ -142,6 +147,7 @@ class ConversationNotifier extends StateNotifier<ConversationState> {
         audioFilePath: audioFilePath,
         history: history,
         systemPrompt: _scenarioSystemPrompt,
+        fluencyLevel: _fluencyLevel,
       );
 
       final user = FirebaseConfig.auth.currentUser;
@@ -156,13 +162,19 @@ class ConversationNotifier extends StateNotifier<ConversationState> {
           userId: user.uid,
           text: turn.aiResponse,
           isUser: false,
+          correction: turn.correction != null
+              ? {'correction': turn.correction!}
+              : null,
         );
       }
 
       final updatedMessages = [
         ..._currentMessages.whereType<ChatMessage>(),
         ChatMessage(role: 'user', content: turn.userTranscript),
-        ChatMessage(role: 'assistant', content: turn.aiResponse),
+        ChatMessage(
+            role: 'assistant',
+            content: turn.aiResponse,
+            correction: turn.correction),
       ];
 
       state = ConversationSpeaking(

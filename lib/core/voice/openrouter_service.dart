@@ -2,6 +2,13 @@ import 'dart:convert';
 import 'package:http/http.dart' as http;
 import 'package:flutter_dotenv/flutter_dotenv.dart';
 
+class OpenRouterChatResult {
+  final String response;
+  final String? correction;
+
+  OpenRouterChatResult({required this.response, this.correction});
+}
+
 class OpenRouterService {
   final String _apiKey;
   final String _model;
@@ -12,13 +19,27 @@ class OpenRouterService {
         _model = dotenv.env['OPENROUTER_MODEL'] ?? 'openai/gpt-4o-mini',
         _client = client ?? http.Client();
 
-  Future<String> chat(
+  Future<OpenRouterChatResult> chat(
     List<Map<String, String>> messages, {
     String? systemPrompt,
+    String? fluencyLevel,
   }) async {
     final allMessages = <Map<String, String>>[];
 
-    final prompt = systemPrompt ?? _defaultSystemPrompt();
+    var prompt = systemPrompt ?? _defaultSystemPrompt();
+    if (fluencyLevel != null) {
+      prompt = '$prompt\n\nThe learner\'s current fluency level is "$fluencyLevel". '
+          'Match your vocabulary and sentence complexity to this level. '
+          'For Beginner or Elementary, use very simple words and short sentences. '
+          'For Intermediate, use everyday vocabulary. '
+          'For Advanced or Fluent, feel free to use more sophisticated language.';
+    }
+    prompt = '$prompt\n\nYou MUST respond with ONLY a valid JSON object, no other text: '
+        '{"response": "<your conversational reply, 1-3 sentences>", '
+        '"correction": "<gentle correction text, or null>"}\n'
+        'If the learner made a grammar, vocabulary, or phrasing mistake, set correction to '
+        'a brief tip like "Use \'went\' not \'goed\'". If no mistake was made, set correction to null. '
+        'The correction is shown visually to the learner — the response is spoken aloud.';
 
     allMessages.add({'role': 'system', 'content': prompt});
     allMessages.addAll(messages);
@@ -36,6 +57,7 @@ class OpenRouterService {
         'messages': allMessages,
         'max_tokens': 300,
         'temperature': 0.7,
+        'response_format': {'type': 'json_object'},
       }),
     );
 
@@ -47,7 +69,20 @@ class OpenRouterService {
 
     final data = jsonDecode(response.body) as Map<String, dynamic>;
     final choices = data['choices'] as List<dynamic>;
-    return choices[0]['message']['content'] as String;
+    final rawContent = choices[0]['message']['content'] as String;
+
+    try {
+      final parsed = jsonDecode(rawContent) as Map<String, dynamic>;
+      final responseText = (parsed['response'] as String?) ?? rawContent;
+      final correction = parsed['correction'] as String?;
+      if (correction == 'null' || correction == null || correction.isEmpty) {
+        return OpenRouterChatResult(response: responseText);
+      }
+      return OpenRouterChatResult(
+          response: responseText, correction: correction);
+    } catch (_) {
+      return OpenRouterChatResult(response: rawContent);
+    }
   }
 
   Future<Map<String, dynamic>> recap(String conversationText) async {
