@@ -69,10 +69,10 @@ Low-latency voice models made real-time spoken correction cheap enough to sell a
 ## Technical Decisions to Lock In
 
 1. **STT/TTS provider** — Deepgram, ElevenLabs, or Azure Speech. This is the latency bottleneck. Pick one.
-2. **Auth method** — Email/password + Google sign-in (Apple for iOS). Use Firebase Auth or Supabase Auth.
-3. **Database** — PostgreSQL (Supabase or managed). Stores users, sessions, transcripts, corrections, streaks, usage minutes.
-4. **Billing** — Stripe. Handles subscriptions, metered billing, free trial → paid conversion.
-5. **Hosting** — Backend on Fly.io or Railway. Keep it simple, no k8s.
+2. **Auth & Database** — Firebase Auth (email/password + Google sign-in) + Firestore for users, sessions, transcripts, corrections, streaks, usage minutes.
+3. **Platform** — Android only for MVP. iOS and web later.
+4. **Billing** — Deferred. No payments in MVP. Add Stripe + RevenueCat later.
+5. **Hosting** — Firebase handles everything (auth, DB, cloud functions if needed). No separate backend for now.
 
 ## Open Design Questions
 
