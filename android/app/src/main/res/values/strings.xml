@@ -1,0 +1,7 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="app_name">Olympus Language AI</string>
+    <string name="default_notification_channel_id">olympus_language_channel</string>
+    <string name="default_notification_channel_name">Olympus Language AI</string>
+    <string name="default_notification_channel_description">Daily practice reminders and streak alerts</string>
+</resources>
