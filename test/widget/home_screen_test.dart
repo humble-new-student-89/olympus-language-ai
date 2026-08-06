@@ -1,6 +1,5 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
-import 'package:olympus_language_ai/features/home/presentation/screens/home_screen.dart';
 
 void main() {
   group('HomeScreen', () {
